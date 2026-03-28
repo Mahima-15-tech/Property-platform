@@ -1,0 +1,21 @@
+const express = require("express");
+const router = express.Router();
+
+const user = require("../controllers/userController");
+const protect = require("../middleware/authmiddleware");
+const upload = require("../middleware/upload");
+
+router.post(
+  "/kyc-upload",
+  protect,
+  upload.single("document"),
+  user.uploadKyc
+);
+
+router.get("/kyc-status", protect, user.getKycStatus);
+router.get("/investors", protect, user.getAllInvestors);
+router.put("/kyc/:id", protect, user.updateKycStatus);
+router.get("/investor/:id", protect, user.getInvestorDetails);
+router.get("/investors/export", protect, user.exportInvestorsPDF);
+
+module.exports = router;
