@@ -7,7 +7,7 @@ dotenv.config();
 connectDB();
 
 const app = express();
-const cors = require("cors");
+
 const allowedOrigins = [
   "http://localhost:5173",
   "https://property-platform-six.vercel.app"
