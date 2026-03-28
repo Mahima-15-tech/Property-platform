@@ -6,16 +6,20 @@ const cors = require("cors");
 dotenv.config();
 connectDB();
 
-const app = express();
+const cors = require("cors");
 
 app.use(cors({
   origin: [
     "http://localhost:5173",
     "https://property-platform-six.vercel.app"
   ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
 
+// 🔥 IMPORTANT (preflight fix)
+app.options("*", cors());
 
 app.use(express.json());
 
