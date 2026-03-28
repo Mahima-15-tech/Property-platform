@@ -8,10 +8,6 @@ connectDB();
 
 const app = express();
 
-
-
-
-
 app.use(cors({
   origin: [
     "http://localhost:5173",
@@ -22,16 +18,7 @@ app.use(cors({
   credentials: true
 }));
 
-// ❌ REMOVE THIS
-// app.options("*", cors());
-
-// 🔥 IMPORTANT (preflight fix)
-app.options("*", cors());
-
-
 app.use(express.json());
-
-
 
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/brokers", require("./routes/brokerRoutes"));
@@ -48,6 +35,6 @@ app.get("/test", (req, res) => {
   res.send("Working");
 });
 
-app.listen(process.env.PORT, () => {
+app.listen(process.env.PORT || 5000, () => {
   console.log(`Server running on port ${process.env.PORT}`);
 });
