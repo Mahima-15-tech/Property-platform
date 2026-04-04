@@ -236,3 +236,9 @@ exports.exportInvestorsPDF = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+exports.getUsersList = async (req, res) => {
+  const users = await User.find().select("_id name");
+  res.json(users);
+};

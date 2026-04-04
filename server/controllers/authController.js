@@ -1,104 +1,75 @@
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 
-exports.register = async (req, res) => {
-  try {
-    const { name, email, password, phone, referralCode } = req.body;
+exports.sendOtp = async (req, res) => {
+  const { phone, name, referralCode, agree } = req.body;
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
-    }
+  if (!agree) {
+    return res.status(400).json({
+      message: "Please accept Terms & Conditions",
+    });
+  }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+  let user = await User.findOne({ phone });
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = process.env.NODE_ENV === "production"
+  ? Math.floor(100000 + Math.random() * 900000).toString()
+  : "123456";
 
-    let referredBy = null;
+  let referredBy = null;
 
-    // 🔥 referral logic
-    if (referralCode) {
-      const broker = await User.findOne({ referralCode });
+  if (referralCode) {
+    const broker = await User.findOne({ referralCode });
+    if (broker) referredBy = broker._id;
+  }
 
-      if (broker) {
-        referredBy = broker._id;
-      }
-    }
-
-    const user = await User.create({
+  if (!user) {
+    user = await User.create({
       name,
-      email,
       phone,
-      password: hashedPassword,
-      role: "investor",
-
-      referredBy, // 🔥 attach broker
-
       otp,
+      referredBy,
       otpExpiry: Date.now() + 5 * 60 * 1000,
     });
-
-    res.json({
-      message: "User registered. Verify OTP",
-      otp,
-    });
-
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  } else {
+    user.otp = otp;
+    user.otpExpiry = Date.now() + 5 * 60 * 1000;
+    await user.save();
   }
+
+  res.json({
+    message: "OTP sent",
+    ...(process.env.NODE_ENV !== "production" && { otp })
+  });
 };
 
 exports.verifyOtp = async (req, res) => {
-    const { email, otp } = req.body;
-  
-    const user = await User.findOne({ email });
-  
-    if (!user) {
-        return res.status(400).json({ message: "User not found" });
-      }
-      
-      if (!user.otp || user.otp !== otp) {
-        return res.status(400).json({ message: "Invalid OTP" });
-      }
-  
-    if (user.otpExpiry < Date.now()) {
-      return res.status(400).json({ message: "OTP expired" });
-    }
-  
-    user.isVerified = true;
-    user.otp = null;
-  
-    await user.save();
-  
-    res.json({ message: "Account verified" });
-  };
+  const { phone, otp } = req.body;
 
+  const user = await User.findOne({ phone });
 
-  const jwt = require("jsonwebtoken");
-
-exports.login = async (req, res) => {
-  const { email, password } = req.body;
-
-  const user = await User.findOne({ email });
-
-  if (!user) return res.status(400).json({ message: "User not found" });
-
-  if (!user.isVerified) {
-    return res.status(400).json({ message: "Verify OTP first" });
+  if (!user) {
+    return res.status(400).json({ message: "User not found" });
   }
 
-  const isMatch = await bcrypt.compare(password, user.password);
-
-  if (!isMatch) {
-    return res.status(400).json({ message: "Invalid credentials" });
+  if (user.otp !== otp) {
+    return res.status(400).json({ message: "Invalid OTP" });
   }
 
+  if (user.otpExpiry < Date.now()) {
+    return res.status(400).json({ message: "OTP expired" });
+  }
 
-  if (user.role === "broker" && !user.isApproved) {
-    return res.status(403).json({
-      message: "Your account is pending admin approval",
+  if (!user.otp) {
+    return res.status(400).json({
+      message: "OTP not requested",
     });
   }
+
+  user.isVerified = true;
+  user.otp = null;
+
+  await user.save();
 
   const token = jwt.sign(
     { id: user._id, role: user.role },
@@ -113,38 +84,73 @@ exports.login = async (req, res) => {
   });
 };
 
-exports.forgotPassword = async (req, res) => {
-    const { email } = req.body;
+
+  const jwt = require("jsonwebtoken");
+
+
+  exports.applyReferral = async (req, res) => {
+    try {
+      const { referralCode } = req.body;
   
-    const user = await User.findOne({ email });
+      const user = await User.findById(req.user.id);
   
-    if (!user) return res.status(400).json({ message: "User not found" });
+      if (user.referredBy) {
+        return res.status(400).json({
+          message: "Referral already applied",
+        });
+      }
   
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const broker = await User.findOne({ referralCode });
   
-    user.otp = otp;
-    user.otpExpiry = Date.now() + 5 * 60 * 1000;
+      if (!broker) {
+        return res.status(400).json({
+          message: "Invalid referral code",
+        });
+      }
   
-    await user.save();
+      user.referredBy = broker._id;
+      await user.save();
   
-    res.json({ message: "OTP sent", otp });
+      res.json({
+        message: "Referral applied successfully",
+      });
+  
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   };
 
-  exports.resetPassword = async (req, res) => {
-    const { email, otp, newPassword } = req.body;
+
+  exports.resendOtp = async (req, res) => {
+    const { phone } = req.body;
   
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ phone });
   
-    if (!user || user.otp !== otp) {
-      return res.status(400).json({ message: "Invalid OTP" });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
     }
   
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    // ⏱ cooldown check (30 sec)
+    const now = Date.now();
+    if (user.lastOtpSent && now - user.lastOtpSent < 30000) {
+      return res.status(400).json({
+        message: "Please wait before requesting again",
+      });
+    }
   
-    user.password = hashedPassword;
-    user.otp = null;
+    const otp =
+      process.env.NODE_ENV === "production"
+        ? Math.floor(100000 + Math.random() * 900000).toString()
+        : "123456";
+  
+    user.otp = otp;
+    user.otpExpiry = now + 5 * 60 * 1000;
+    user.lastOtpSent = now;
   
     await user.save();
   
-    res.json({ message: "Password reset successful" });
+    res.json({
+      message: "OTP resent successfully",
+      ...(process.env.NODE_ENV !== "production" && { otp }),
+    });
   };

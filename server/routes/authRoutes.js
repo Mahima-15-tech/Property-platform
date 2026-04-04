@@ -3,12 +3,13 @@ const router = express.Router();
 const auth = require("../controllers/authController");
 const User = require("../models/user");
 const authmiddleware = require("../middleware/authmiddleware");
+const protect = require("../middleware/authmiddleware");
 
-router.post("/register", auth.register);
+router.post("/send-otp", auth.sendOtp);
 router.post("/verify-otp", auth.verifyOtp);
-router.post("/login", auth.login);
-router.post("/forgot-password", auth.forgotPassword);
-router.post("/reset-password", auth.resetPassword);
+router.post("/resend-otp", auth.resendOtp);
+router.post("/apply-referral", protect, auth.applyReferral);
+
 router.get("/me", authmiddleware, async (req, res) => {
     const user = await User.findById(req.user.id).select("-password");
     res.json(user);

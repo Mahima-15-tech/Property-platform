@@ -30,6 +30,8 @@ app.use("/api/leads", require("./routes/leadRoutes"));
 app.use("/api/portfolio", require("./routes/portfolioRoutes"));
 app.use("/api/commissions", require("./routes/commissionRoutes"));
 app.use("/api", require("./routes/transactionRoutes"));
+app.use("/api/reports", require("./routes/reportRoutes"));
+app.use("/api", require("./routes/auditLogRoutes"));
 
 app.get("/test", (req, res) => {
   res.send("Working");

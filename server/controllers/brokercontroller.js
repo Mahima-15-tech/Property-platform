@@ -14,7 +14,9 @@ exports.registerBroker = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = process.env.NODE_ENV === "production"
+    ? Math.floor(100000 + Math.random() * 900000).toString()
+    : "123456";
 
     const user = await User.create({
       name,

@@ -1,4 +1,5 @@
 const User = require("../models/user");
+const AuditLog = require("../models/auditLog");
 
 exports.approveBroker = async (req, res) => {
     try {
@@ -21,12 +22,23 @@ exports.approveBroker = async (req, res) => {
   };
 
   exports.approveKyc = async (req, res) => {
+
+    
+
+
     const { id } = req.params;
   
     const user = await User.findById(id);
   
     user.kycStatus = "approved";
     await user.save();
+
+    await AuditLog.create({
+      action: "KYC Approved",
+      user: req.user.id,
+      details: user.name, // ✅ now correct
+      type: "approval",
+    });
   
     res.json({ message: "KYC approved" });
   };

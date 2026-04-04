@@ -24,6 +24,11 @@ const propertySchema = new mongoose.Schema(
       default: true,
     },
 
+    isFeatured: {
+      type: Boolean,
+      default: false,
+    },
+
     // 🔥 INVESTMENT (UI fields)
     totalValue: Number,
     totalShares: Number,

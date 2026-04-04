@@ -17,5 +17,6 @@ router.get("/investors", protect, user.getAllInvestors);
 router.put("/kyc/:id", protect, user.updateKycStatus);
 router.get("/investor/:id", protect, user.getInvestorDetails);
 router.get("/investors/export", protect, user.exportInvestorsPDF);
+router.get("/list", protect, user.getUsersList);
 
 module.exports = router;
