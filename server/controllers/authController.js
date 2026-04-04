@@ -12,9 +12,7 @@ exports.sendOtp = async (req, res) => {
 
   let user = await User.findOne({ phone });
 
-  const otp = process.env.NODE_ENV === "production"
-  ? Math.floor(100000 + Math.random() * 900000).toString()
-  : "123456";
+  const otp = "123456";
 
   let referredBy = null;
 
@@ -138,10 +136,7 @@ exports.verifyOtp = async (req, res) => {
       });
     }
   
-    const otp =
-      process.env.NODE_ENV === "production"
-        ? Math.floor(100000 + Math.random() * 900000).toString()
-        : "123456";
+    const otp = "123456";
   
     user.otp = otp;
     user.otpExpiry = now + 5 * 60 * 1000;
