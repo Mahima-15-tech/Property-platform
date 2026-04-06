@@ -5,6 +5,8 @@ const admin = require("../controllers/adminController");
 const protect = require("../middleware/authmiddleware");
 const authorize = require("../middleware/roleMiddleware");
 
+router.post("/login", admin.adminLogin);
+
 router.patch(
   "/approve-broker/:id",
   protect,              // 🔐 login check
