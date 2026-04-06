@@ -3,7 +3,7 @@ const AuditLog = require("../models/auditLog");
 
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const User = require("../models/user");
+
 
 exports.adminLogin = async (req, res) => {
   try {
