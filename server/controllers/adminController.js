@@ -7,23 +7,26 @@ const jwt = require("jsonwebtoken");
 
 exports.adminLogin = async (req, res) => {
   try {
+    console.log("BODY:", req.body);
+
     const { email, password } = req.body;
 
-    // 🔍 check user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.trim() });
 
     if (!user || user.role !== "admin") {
       return res.status(400).json({ message: "Invalid admin credentials" });
     }
 
-    // 🔐 password check
+    if (!password || !user.password) {
+      return res.status(400).json({ message: "Password missing" });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid password" });
     }
 
-    // 🎟 token
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
@@ -37,6 +40,7 @@ exports.adminLogin = async (req, res) => {
     });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: error.message });
   }
 };
