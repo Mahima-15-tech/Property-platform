@@ -4,13 +4,14 @@ const bcrypt = require("bcrypt");
 exports.sendOtp = async (req, res) => {
   const { phone, name, referralCode, agree } = req.body;
 
-  if (!agree) {
+  let user = await User.findOne({ phone }); // ✅ pehle ye aayega
+
+  // ✅ sirf signup ke time agree check
+  if (!user && !agree) {
     return res.status(400).json({
       message: "Please accept Terms & Conditions",
     });
   }
-
-  let user = await User.findOne({ phone });
 
   const otp = "123456";
 
@@ -37,7 +38,7 @@ exports.sendOtp = async (req, res) => {
 
   res.json({
     message: "OTP sent",
-    ...(process.env.NODE_ENV !== "production" && { otp })
+    ...(process.env.NODE_ENV !== "production" && { otp }),
   });
 };
 
@@ -50,6 +51,12 @@ exports.verifyOtp = async (req, res) => {
     return res.status(400).json({ message: "User not found" });
   }
 
+  if (!user.otp) {
+    return res.status(400).json({
+      message: "OTP not requested",
+    });
+  }
+
   if (user.otp !== otp) {
     return res.status(400).json({ message: "Invalid OTP" });
   }
@@ -58,11 +65,8 @@ exports.verifyOtp = async (req, res) => {
     return res.status(400).json({ message: "OTP expired" });
   }
 
-  if (!user.otp) {
-    return res.status(400).json({
-      message: "OTP not requested",
-    });
-  }
+  // 🔥 CHECK: pehle se verified tha ya nahi
+  const isNewUser = !user.isVerified;
 
   user.isVerified = true;
   user.otp = null;
@@ -76,9 +80,13 @@ exports.verifyOtp = async (req, res) => {
   );
 
   res.json({
-    message: "Login successful",
+    message: isNewUser
+      ? "Signup successful"
+      : "Login successful",
     token,
     user,
+    type: isNewUser ? "signup" : "login",
+    isNewUser: isNewUser,
   });
 };
 
