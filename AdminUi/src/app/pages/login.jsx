@@ -10,7 +10,7 @@ export function Login() {
 
   const handleLogin = async () => {
     try {
-      const res = await axios.post("/auth/login", { email, password });
+      const res = await axios.post("/admin/login", { email, password });
 
       localStorage.setItem("token", res.data.token);
 
