@@ -5,6 +5,7 @@ export const createProperty = (data) => {
   return axios.post("/properties", data);
 };
 
+
 // GET ALL
 export const getProperties = () => {
   return axios.get("/properties");
@@ -19,6 +20,8 @@ export const getPropertyById = (id) => {
 export const updateProperty = (id, data) => {
   return axios.put(`/properties/${id}`, data);
 };
+
+export const getPropertiesList = () => axios.get("/properties/list");
 
 // DELETE
 export const deleteProperty = (id) => {

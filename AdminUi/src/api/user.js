@@ -12,3 +12,5 @@ export const updateKyc = (id, status) =>
   axios.get("/user/investors/export", {
     responseType: "blob",
   });
+
+  export const getUsersList = () => axios.get("/user/list");

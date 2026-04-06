@@ -182,10 +182,10 @@ export function RootLayout() {
 
           <div className="flex items-center gap-3">
 
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Create Property</span>
-            </Button>
+              {/* <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Create Property</span>
+              </Button> */}
 
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />

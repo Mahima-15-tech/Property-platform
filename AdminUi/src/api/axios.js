@@ -16,3 +16,5 @@ instance.interceptors.request.use((config) => {
 });
 
 export default instance;
+
+//https://property-platform.onrender.com/api

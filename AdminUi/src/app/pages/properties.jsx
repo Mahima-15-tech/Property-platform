@@ -40,6 +40,7 @@ import { Checkbox } from "../components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { deleteProperty } from "../../api/property";
+import { updateProperty } from "../../api/property";
 
 
 
@@ -99,6 +100,19 @@ const navigate = useNavigate();
     });
   };
 
+  const handleToggleFeatured = async (id, value) => {
+    try {
+      await updateProperty(id, { isFeatured: value });
+  
+      toast.success(
+        value ? "Marked as Featured ⭐" : "Removed from Featured"
+      );
+  
+      fetchProperties(); // refresh list
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Error updating");
+    }
+  };
 
   const handleView = (id) => {
     navigate(`/properties/view/${id}`);
@@ -232,6 +246,7 @@ const currentProperties = sortedProperties.slice(indexOfFirst, indexOfLast);
                     checked={selectedRows.length === properties.length}
                     onCheckedChange={handleSelectAll}
                   />
+                  
                 </TableHead>
 
                 <TableHead>
@@ -260,6 +275,7 @@ const currentProperties = sortedProperties.slice(indexOfFirst, indexOfLast);
                 <TableHead>Status</TableHead>
                 <TableHead>Broker</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead>Featured</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -303,6 +319,14 @@ const currentProperties = sortedProperties.slice(indexOfFirst, indexOfLast);
                     <TableCell>Admin</TableCell>
                     <TableCell>
   {new Date(property.createdAt).toLocaleString()}
+</TableCell>
+<TableCell onClick={(e) => e.stopPropagation()}>
+  <Checkbox
+    checked={property.isFeatured}
+    onCheckedChange={(checked) =>
+      handleToggleFeatured(property._id, checked)
+    }
+  />
 </TableCell>
 
                     <TableCell onClick={(e) => e.stopPropagation()}>
