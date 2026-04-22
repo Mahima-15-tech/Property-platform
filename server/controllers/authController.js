@@ -33,6 +33,13 @@ exports.sendOtp = async (req, res) => {
   } else {
     user.otp = otp;
     user.otpExpiry = Date.now() + 5 * 60 * 1000;
+  
+    // 🔥 ADD THIS
+    if (!user.referredBy && referralCode) {
+      const broker = await User.findOne({ referralCode });
+      if (broker) user.referredBy = broker._id;
+    }
+  
     await user.save();
   }
 
@@ -128,7 +135,7 @@ exports.verifyOtp = async (req, res) => {
 
 
   exports.resendOtp = async (req, res) => {
-    const { phone } = req.body;
+    const { phone, referralCode } = req.body; // 🔥 ADD THIS
   
     const user = await User.findOne({ phone });
   
@@ -136,24 +143,18 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "User not found" });
     }
   
-    // ⏱ cooldown check (30 sec)
-    const now = Date.now();
-    if (user.lastOtpSent && now - user.lastOtpSent < 30000) {
-      return res.status(400).json({
-        message: "Please wait before requesting again",
-      });
-    }
-  
     const otp = "123456";
   
     user.otp = otp;
-    user.otpExpiry = now + 5 * 60 * 1000;
-    user.lastOtpSent = now;
+    user.otpExpiry = Date.now() + 5 * 60 * 1000;
+  
+    // 🔥 referral fix
+    if (!user.referredBy && referralCode) {
+      const broker = await User.findOne({ referralCode });
+      if (broker) user.referredBy = broker._id;
+    }
   
     await user.save();
   
-    res.json({
-      message: "OTP resent successfully",
-      ...(process.env.NODE_ENV !== "production" && { otp }),
-    });
+    res.json({ message: "OTP resent", otp });
   };

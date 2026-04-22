@@ -43,6 +43,14 @@
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    isApproved: {
+      type: Boolean,
+      default: false
+    },
+    commissionRate: {
+      type: Number,
+      default: 10
+    },
   
   }, { timestamps: true });
 

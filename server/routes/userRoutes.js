@@ -3,12 +3,12 @@ const router = express.Router();
 
 const user = require("../controllers/userController");
 const protect = require("../middleware/authmiddleware");
-const upload = require("../middleware/upload");
+const { uploadSingle } = require("../middleware/upload");
 
 router.post(
   "/kyc-upload",
   protect,
-  upload.single("document"),
+  uploadSingle, // ✅ correct
   user.uploadKyc
 );
 

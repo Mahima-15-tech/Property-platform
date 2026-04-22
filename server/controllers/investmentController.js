@@ -99,3 +99,90 @@ exports.invest = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };  
+
+
+exports.getCheckoutData = async (req, res) => {
+  try {
+    const p = await Property.findById(req.params.propertyId);
+
+    res.json({
+      id: p._id,
+      name: p.name,
+      location: p.location?.city,
+      image: p.media?.images?.[0],
+
+      sharePrice: p.pricePerShare,
+      totalShares: p.totalShares,
+      availableShares: p.availableShares,
+
+      roi: p.roi,
+      fundedPercent: p.soldPercent,
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.createInvestment = async (req, res) => {
+  try {
+    const { propertyId, shares, referralCode } = req.body;
+
+    const property = await Property.findById(propertyId);
+
+    if (!property) {
+      return res.status(404).json({ message: "Property not found" });
+    }
+
+    if (shares > property.availableShares) {
+      return res.status(400).json({
+        message: "Not enough shares available",
+      });
+    }
+
+    const amount = shares * property.pricePerShare;
+
+    // 🔥 referral logic
+    let discount = 0;
+    if (referralCode === "SOVEREIGN2024") {
+      discount = 500;
+    }
+
+    const finalAmount = amount - discount;
+
+    const ownershipPercent =
+      (shares / property.totalShares) * 100;
+
+    const investment = await Investment.create({
+      userId: req.user.id,
+      propertyId,
+      shares,
+      pricePerShare: property.pricePerShare,
+      amount,
+      discount,
+      finalAmount,
+      ownershipPercent,
+    });
+
+    // 🔥 PROPERTY UPDATE
+    property.availableShares -= shares;
+    property.investedAmount += finalAmount;
+    property.investors += 1;
+
+    property.soldPercent =
+      ((property.totalShares - property.availableShares) /
+        property.totalShares) *
+      100;
+
+    await property.save();
+
+    res.json({
+      message: "Investment successful",
+      investment,
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+

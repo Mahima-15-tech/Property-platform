@@ -131,3 +131,136 @@ exports.getCommissionBreakdown = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+// GET /broker/dashboard
+exports.getBrokerDashboard = async (req, res) => {
+  try {
+    const brokerId = req.user.id;
+
+    // 🟢 1. Total referrals
+    const referrals = await User.countDocuments({
+      referredBy: brokerId,
+    });
+
+    // 🟢 2. Referred users list
+    const referredUsers = await User.find({
+      referredBy: brokerId,
+    }).distinct("_id");
+
+    // 🟢 3. Investments (NO status filter ❗)
+    const investments = await Investment.find({
+      userId: { $in: referredUsers },
+    });
+
+    // 🟢 4. Total Investment (safe fallback)
+    const totalInvestment = investments.reduce(
+      (sum, inv) => sum + (inv.finalAmount || inv.amount || 0),
+      0
+    );
+
+    // 🟢 5. Conversions (unique investors count)
+    const uniqueInvestors = new Set(
+      investments.map((inv) => inv.userId.toString())
+    );
+
+    const conversions = uniqueInvestors.size;
+
+    // 🟢 6. Commissions
+    const commissions = await Commission.find({
+      brokerId,
+    });
+
+    let paid = 0;
+    let pending = 0;
+
+    commissions.forEach((c) => {
+      if (c.status === "paid") {
+        paid += c.commissionAmount;
+      } else {
+        pending += c.commissionAmount;
+      }
+    });
+
+    // 🟢 7. Final response
+    res.json({
+      referrals,
+      conversions,
+      totalInvestment,
+      totalEarnings: paid + pending,
+      pendingCommission: pending,
+      paidCommission: paid,
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.getBrokerProfile = async (req, res) => {
+  const user = await User.findById(req.user.id);
+
+  res.json({
+    name: user.name,
+    referralCode: user.referralCode,
+    shareLink: `https://yourdomain.com/register?ref=${user.referralCode}`
+  });
+};
+
+exports.getReferredInvestors = async (req, res) => {
+  const brokerId = req.user.id;
+
+  const users = await User.find({ referredBy: brokerId });
+
+  const investments = await Investment.find({
+    userId: { $in: users.map(u => u._id) }
+  })
+  .populate("userId", "name phone")
+  .populate("propertyId", "name")
+  .sort({ createdAt: -1 });
+
+  const data = investments.map(inv => ({
+    investorName: inv.userId.name,
+    contact: inv.userId.phone,
+    property: inv.propertyId.name,
+    amount: inv.finalAmount,
+    date: inv.createdAt,
+    status: inv.status,
+  }));
+
+  res.json(data);
+};
+
+
+exports.getCommissionDetails = async (req, res) => {
+  const brokerId = req.user.id;
+
+  const commissions = await Commission.find({ brokerId })
+    .populate("userId", "name")
+    .populate("propertyId", "name");
+
+  res.json(commissions);
+};
+
+exports.getEarningsSummary = async (req, res) => {
+  const brokerId = req.user.id;
+
+  const commissions = await Commission.find({ brokerId });
+
+  const monthly = commissions.filter(c => {
+    const now = new Date();
+    return c.createdAt.getMonth() === now.getMonth();
+  });
+
+  const total = monthly.reduce((sum, c) => sum + c.commissionAmount, 0);
+
+  const target = 15000;
+
+  res.json({
+    total,
+    target,
+    percent: (total / target) * 100,
+    nextPayout: "30 Oct 2023"
+  });
+};

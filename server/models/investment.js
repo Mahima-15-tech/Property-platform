@@ -12,13 +12,25 @@ const investmentSchema = new mongoose.Schema({
   },
 
   shares: Number,
-  amount: Number,
+
+  pricePerShare: Number, // 🔥 add
+  amount: Number, // total before discount
+
+  discount: {
+    type: Number,
+    default: 0,
+  },
+
+  finalAmount: Number, // after discount
+
+  ownershipPercent: Number, // 🔥 add
 
   status: {
     type: String,
     enum: ["pending", "completed", "rejected"],
     default: "pending",
   },
+
   method: {
     type: String,
     default: "Bank Transfer",

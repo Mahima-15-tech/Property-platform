@@ -4,39 +4,28 @@ const router = express.Router();
 const property = require("../controllers/propertyController");
 const protect = require("../middleware/authmiddleware");
 const authorize = require("../middleware/roleMiddleware");
+const { uploadFields } = require("../middleware/upload");
 
-router.post("/", protect, authorize("admin"), property.createProperty);
+// router.post("/", protect, authorize("admin"), property.createProperty);
+router.post(
+  "/create",
+  protect,
+  authorize("admin"),
+  uploadFields, 
+  property.createProperty
+);
 
 router.get("/list", protect, property.getPropertiesList);
 
-// router.get("/my", protect, authorize("broker"), property.getMyProperties);
-
+router.get("/explore", property.exploreProperties);
 router.get("/featured", property.getFeaturedProperties);
+router.get("/related/:id", property.getRelatedProperties); // ⭐ BEFORE /:id
 
 router.get("/", property.getAllProperties);
 
-router.get("/explore", property.exploreProperties);
+router.get("/:id", property.getPropertyById); // ⭐ LAST
 
-
-
-router.get("/:id", property.getPropertyById);
-
-
-
-// ✏️ Edit property
-router.put(
-    "/:id",
-    protect,
-    authorize("admin"),
-    property.updateProperty
-  );
-  
-  // 🗑️ Delete property
-  router.delete(
-    "/:id",
-    protect,
-    authorize("admin"),
-    property.deleteProperty
-  );
+router.put("/:id", protect, authorize("admin"), property.updateProperty);
+router.delete("/:id", protect, authorize("admin"), property.deleteProperty);
 
 module.exports = router;

@@ -2,23 +2,59 @@ const mongoose = require("mongoose");
 
 const propertySchema = new mongoose.Schema(
   {
-    // 🔹 BASIC (UI me name use ho raha hai)
     name: String,
     type: String,
+    category: String,
+
     description: String,
+    size: String,
 
-  
-
-
-    // 🔹 USER
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+    // 📍 LOCATION
+    location: {
+      city: String,
+      state: String,
+      address: String,
+      street: String,
+      landmark: String,
+      pincode: String,
+      lat: Number,
+      lng: Number,
     },
 
-    size: String, // e.g. "1200 sqft"
+    // 💰 INVESTMENT
+    totalValue: Number,
+    totalShares: Number,
+    availableShares: Number,
+    pricePerShare: Number,
 
+    roi: Number,
+    targetROI: Number,
+    rentalYield: Number,
+    appreciation: Number,
+    duration: Number,
 
+    // 📊 STATUS
+    status: {
+      type: String,
+      default: "funding",
+    },
+
+    soldPercent: {
+      type: Number,
+      default: 0,
+    },
+
+    investors: {
+      type: Number,
+      default: 0,
+    },
+
+    investedAmount: {
+      type: Number,
+      default: 0,
+    },
+
+    // ⭐ FLAGS
     isPublished: {
       type: Boolean,
       default: true,
@@ -29,62 +65,42 @@ const propertySchema = new mongoose.Schema(
       default: false,
     },
 
-    // 🔥 INVESTMENT (UI fields)
-    totalValue: Number,
-    totalShares: Number,
-    availableShares: Number,
-    pricePerShare: Number,
+    // 🏢 EXTRA DETAILS (🔥 NEW IMPORTANT)
+    tenants: String,          // e.g. "3 Tenants"
+    propertyGrade: String,    // e.g. "Grade-A Tower"
 
-    roi: Number,
-    duration: Number,
+    // 🌟 HIGHLIGHTS
+    highlights: [String],
 
-    // 🔥 UI CALCULATED
-    soldPercent: {
-      type: Number,
-      default: 0,
-    },
-    
-    progress: {
-      type: Number,
-      default: 0,
-    },
-    
-    investors: {
-      type: Number,
-      default: 0,
-    },
-    
-    investedAmount: {
-      type: Number,
-      default: 0,
-    },
-    
-    status: {
-      type: String,
-      enum: ["funding", "funded", "active"],
-      default: "funding",
+    // 📍 NEARBY LOCATIONS
+    // nearby: [
+    //   {
+    //     name: String,
+    //     distance: String,
+    //   },
+    // ],
+
+    // 🏊 AMENITIES
+    amenities: [String],
+
+    // 📂 MEDIA
+    media: {
+      images: [String],
+      video: String,
+      brochure: String, 
+      documents: [
+        {
+          name: String,
+          url: String,
+        },
+      ],
     },
 
-    // 🔥 NEW FIELDS ADD
-amenities: [String],
-
-media: {
-  images: [String],
-  video: String,
-  brochure: String,
-  documents: [String],
-},
-
-location: {
-  city: String,
-  state: String,
-  address: String,
-  street: String,
-  landmark: String,
-  pincode: String,
-  lat: Number,
-  lng: Number,
-},
+    // 👤 OWNER
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
   },
   { timestamps: true }
 );
