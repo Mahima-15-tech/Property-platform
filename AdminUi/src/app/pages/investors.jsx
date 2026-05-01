@@ -16,6 +16,7 @@ import { Search, Filter, Download, Eye, Check, X } from "lucide-react";
 import React from "react";
 import { getInvestors, getInvestorDetails, updateKyc, exportInvestors } from "../../api/user";
 import { toast } from "sonner";
+import { approveInvestment, rejectInvestment } from "../../api/investment";
 
 
 export function Investors() {
@@ -96,6 +97,28 @@ useEffect(() => {
       toast.error("Export failed");
     }
   };
+
+  const handleApproveInvestment = async (id) => {
+    try {
+      await approveInvestment(id);
+      toast.success("Investment Approved");
+      handleView(selectedInvestor.user._id); // refresh
+    } catch {
+      toast.error("Failed");
+    }
+  };
+  
+  const handleRejectInvestment = async (id) => {
+    try {
+      await rejectInvestment(id);
+      toast.success("Investment Rejected");
+      handleView(selectedInvestor.user._id);
+    } catch {
+      toast.error("Failed");
+    }
+  };
+
+
   return (
     <div className="space-y-6">
       {/* HEADER */}
@@ -197,24 +220,25 @@ useEffect(() => {
       </Card>
 
       {/* SIDE PANEL */}
-      <Sheet open={!!selectedInvestor} onOpenChange={() => setSelectedInvestor(null)}>
-  <SheetContent className="w-full sm:max-w-lg p-4 overflow-y-auto bg-background">
+     {/* SIDE PANEL */}
+<Sheet open={!!selectedInvestor} onOpenChange={() => setSelectedInvestor(null)}>
+  <SheetContent className="w-full sm:max-w-lg p-6 overflow-y-auto bg-gradient-to-br from-white to-gray-50">
 
     {selectedInvestor && (
       <>
         <SheetHeader>
-          <SheetTitle className="text-xl font-semibold">
+          <SheetTitle className="text-2xl font-semibold tracking-tight">
             Investor Details
           </SheetTitle>
         </SheetHeader>
 
         <div className="space-y-6 mt-6">
 
-          {/* PROFILE */}
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/40 border shadow-sm">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-indigo-500 flex items-center justify-center text-white text-xl font-semibold shadow">
+          {/* 🔥 PROFILE */}
+          <div className="flex items-center gap-4 p-5 rounded-2xl bg-white border shadow-md">
+            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-indigo-500 flex items-center justify-center text-white text-xl font-semibold shadow-lg">
               {selectedInvestor.user.name
-                .split(" ")
+                ?.split(" ")
                 .map((n) => n[0])
                 .join("")}
             </div>
@@ -229,76 +253,169 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* INFO GRID */}
+          {/* 🔥 STATS */}
           <div className="grid grid-cols-2 gap-4">
+            {[
+              { label: "Total Invested", value: selectedInvestor.user.totalInvested },
+              { label: "Properties", value: selectedInvestor.user.properties },
+              { label: "ROI", value: selectedInvestor.user.avgROI, green: true },
+              { label: "KYC", value: selectedInvestor.user.kycStatus, badge: true },
+            ].map((item, i) => (
+              <div key={i} className="p-4 rounded-xl bg-white border shadow-sm">
+                <p className="text-xs text-muted-foreground">{item.label}</p>
 
-            <div className="p-4 rounded-xl bg-muted/40 border shadow-sm">
-              <p className="text-xs text-muted-foreground">Total Invested</p>
-              <p className="text-xl font-bold text-primary">
-                {selectedInvestor.user.totalInvested}
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-muted/40 border shadow-sm">
-              <p className="text-xs text-muted-foreground">Properties</p>
-              <p className="text-lg font-semibold">
-                {selectedInvestor.user.properties}
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-muted/40 border shadow-sm">
-              <p className="text-xs text-muted-foreground">ROI</p>
-              <p className="text-green-600 font-semibold">
-                {selectedInvestor.user.avgROI}
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-muted/40 border shadow-sm">
-              <p className="text-xs text-muted-foreground">KYC</p>
-              <StatusBadge status={selectedInvestor.user.kycStatus} />
-            </div>
-
+                {item.badge ? (
+                  <StatusBadge status={item.value} />
+                ) : (
+                  <p className={`text-lg font-semibold ${item.green ? "text-green-600" : "text-primary"}`}>
+                    {item.value}
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
 
-          {/* PHONE */}
-          <div className="p-4 rounded-xl bg-muted/40 border shadow-sm">
+          {/* 🔥 PHONE */}
+          <div className="p-4 rounded-xl bg-white border shadow-sm">
             <p className="text-xs text-muted-foreground">Phone</p>
             <p className="font-medium">{selectedInvestor.user.phone}</p>
           </div>
 
-          {/* INVESTMENTS */}
-          <div className="border-t pt-4">
-            <h4 className="font-semibold mb-3">Recent Investments</h4>
+          {/* 🔥 KYC DETAILS */}
+          {/* 🔥 PREMIUM KYC */}
+{selectedInvestor.kyc && (
+  <div className="space-y-4">
 
-            <div className="space-y-3">
+    {/* BASIC */}
+    <div className="p-4 rounded-xl bg-white border shadow-sm">
+      <h4 className="font-semibold mb-2">Basic Info</h4>
+      <p><b>Name:</b> {selectedInvestor.kyc.fullName}</p>
+      <p><b>DOB:</b> {new Date(selectedInvestor.kyc.dob).toLocaleDateString()}</p>
+      <p><b>Address:</b> {selectedInvestor.kyc.address}</p>
+    </div>
+
+    {/* PAN */}
+    <div className="p-4 rounded-xl bg-white border shadow-sm">
+      <h4 className="font-semibold mb-2">PAN Details</h4>
+      <p><b>PAN Number:</b> {selectedInvestor.kyc.panNumber}</p>
+
+      {selectedInvestor.kyc.panFile && (
+        <img
+          src={selectedInvestor.kyc.panFile}
+          className="mt-2 rounded-lg border h-40 object-cover"
+        />
+      )}
+    </div>
+
+    {/* AADHAAR */}
+    <div className="p-4 rounded-xl bg-white border shadow-sm">
+      <h4 className="font-semibold mb-2">Aadhaar Details</h4>
+      <p><b>Aadhaar:</b> {selectedInvestor.kyc.aadhaarNumber}</p>
+
+      {selectedInvestor.kyc.aadhaarFile && (
+        <img
+          src={selectedInvestor.kyc.aadhaarFile}
+          className="mt-2 rounded-lg border h-40 object-cover"
+        />
+      )}
+    </div>
+
+    {/* BANK */}
+    <div className="p-4 rounded-xl bg-white border shadow-sm">
+      <h4 className="font-semibold mb-2">Bank Details</h4>
+      <p><b>Name:</b> {selectedInvestor.kyc.bank?.beneficiaryName}</p>
+      <p><b>Account:</b> {selectedInvestor.kyc.bank?.accountNumber}</p>
+      <p><b>IFSC:</b> {selectedInvestor.kyc.bank?.ifsc}</p>
+
+      {selectedInvestor.kyc.bank?.cancelCheque && (
+        <img
+          src={selectedInvestor.kyc.bank.cancelCheque}
+          className="mt-2 rounded-lg border h-40 object-cover"
+        />
+      )}
+    </div>
+
+  </div>
+)}
+
+          {/* 🔥 KYC APPROVE */}
+          {selectedInvestor.user.kycStatus === "pending" && (
+            <div className="flex gap-3">
+              <Button
+                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 shadow-md hover:scale-105"
+                onClick={() => handleKyc(selectedInvestor.user._id, "approved")}
+              >
+                <Check className="h-4 w-4 mr-1" />
+                Approve KYC
+              </Button>
+
+              <Button
+                variant="destructive"
+                className="flex-1 shadow-md hover:scale-105"
+                onClick={() => handleKyc(selectedInvestor.user._id, "rejected")}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Reject
+              </Button>
+            </div>
+          )}
+
+          {/* 🔥 INVESTMENTS */}
+          <div className="border-t pt-4">
+            <h4 className="font-semibold mb-3">Investments</h4>
+
+            <div className="space-y-4">
 
               {selectedInvestor.investments.map((inv, i) => (
                 <div
                   key={i}
-                  className="p-4 rounded-xl border bg-muted/30 hover:bg-muted/50 transition-all duration-200 shadow-sm"
+                  className="p-4 rounded-2xl bg-white border shadow-md hover:shadow-lg transition"
                 >
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between">
 
                     {/* LEFT */}
                     <div>
-                      <p className="font-medium text-sm">
-                        {inv.propertyId?.name || "Property"}
+                      <p className="font-semibold">
+                        {inv.propertyId?.name}
                       </p>
 
-                      <p className="text-xs text-muted-foreground">
-                        Invested Amount
+                      <p className="text-sm text-muted-foreground">
+                        ₹ {inv.amount}
                       </p>
+
+                      <div className="mt-1">
+                        <StatusBadge status={inv.status} />
+                      </div>
                     </div>
 
                     {/* RIGHT */}
                     <div className="text-right">
-                      <p className="font-semibold text-primary">
-                        ₹ {inv.amount}
-                      </p>
-
                       <p className="text-xs text-muted-foreground">
                         {new Date(inv.createdAt).toLocaleDateString()}
                       </p>
+
+                      {/* 🔥 APPROVE BUTTON */}
+                      {inv.status !== "approved" && (
+                        <div className="flex gap-2 mt-2 justify-end">
+
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={() => handleApproveInvestment(inv._id)}
+                          >
+                            Approve
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleRejectInvestment(inv._id)}
+                          >
+                            Reject
+                          </Button>
+
+                        </div>
+                      )}
                     </div>
 
                   </div>
@@ -307,32 +424,6 @@ useEffect(() => {
 
             </div>
           </div>
-
-          {/* ACTION BUTTONS */}
-          {selectedInvestor.user.kycStatus === "pending" && (
-            <div className="flex gap-3 pt-4 border-t">
-
-              <Button
-                className="flex-1 bg-green-600 hover:bg-green-700"
-                onClick={() =>
-                  handleKyc(selectedInvestor.user._id, "approved")
-                }
-              >
-                Approve
-              </Button>
-
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={() =>
-                  handleKyc(selectedInvestor.user._id, "rejected")
-                }
-              >
-                Reject
-              </Button>
-
-            </div>
-          )}
 
         </div>
       </>

@@ -19,11 +19,11 @@ router.get("/list", protect, property.getPropertiesList);
 
 router.get("/explore", property.exploreProperties);
 router.get("/featured", property.getFeaturedProperties);
-router.get("/related/:id", property.getRelatedProperties); // ⭐ BEFORE /:id
+router.get("/related/:id", property.getRelatedProperties); 
 
 router.get("/", property.getAllProperties);
 
-router.get("/:id", property.getPropertyById); // ⭐ LAST
+router.get("/:id", property.getPropertyById);
 
 router.put("/:id", protect, authorize("admin"), property.updateProperty);
 router.delete("/:id", protect, authorize("admin"), property.deleteProperty);

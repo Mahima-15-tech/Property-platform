@@ -115,6 +115,12 @@ exports.getInvestorDetails = async (req, res) => {
       userId: req.params.id,
     }).populate("propertyId");
 
+    const KYC = require("../models/kyc");
+
+const kyc = await KYC.findOne({
+  userId: req.params.id,
+});
+
     // ✅ total invested
     const totalInvested = investments.reduce(
       (sum, i) => sum + i.amount,
@@ -139,6 +145,7 @@ exports.getInvestorDetails = async (req, res) => {
         avgROI,
       },
       investments,
+      kyc,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -241,4 +248,44 @@ exports.exportInvestorsPDF = async (req, res) => {
 exports.getUsersList = async (req, res) => {
   const users = await User.find().select("_id name");
   res.json(users);
+};
+
+
+exports.toggleWatchlist = async (req, res) => {
+  const user = await User.findById(req.user.id);
+  const { propertyId } = req.body;
+
+  // ✅ null values hata do (important)
+  user.watchlist = user.watchlist.filter(Boolean);
+
+  const index = user.watchlist.findIndex(
+    (id) => id && id.toString() === propertyId
+  );
+
+  if (index > -1) {
+    user.watchlist.splice(index, 1); // remove
+  } else {
+    user.watchlist.push(propertyId); // add
+  }
+
+  await user.save();
+
+  res.json({ message: "Watchlist updated" });
+};
+
+exports.getWatchlist = async (req, res) => {
+  const user = await User.findById(req.user.id)
+    .populate("watchlist");
+
+  const data = user.watchlist
+    .filter(Boolean) // ✅ null safe
+    .map(p => ({
+      id: p._id,
+      name: p.name,
+      location: `${p.location?.city}, ${p.location?.state}`, 
+      image: p.media?.images?.[0],
+      roi: p.roi,
+    }));
+
+  res.json(data);
 };

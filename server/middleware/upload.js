@@ -2,18 +2,18 @@ const multer = require("multer");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary");
 
+// 🔥 COMMON STORAGE (dynamic folder)
 const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
     let resourceType = "auto";
 
-    // 🔥 video detect
     if (file.mimetype.startsWith("video")) {
       resourceType = "video";
     }
 
     return {
-      folder: "properties",
+      folder: req.uploadFolder || "properties", // 🔥 dynamic folder
       resource_type: resourceType,
     };
   },
@@ -22,10 +22,9 @@ const storage = new CloudinaryStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: 200 * 1024 * 1024, // ✅ 200MB (video safe)
+    fileSize: 200 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
-    // ✅ allow images, pdf, video
     if (
       file.mimetype.startsWith("image") ||
       file.mimetype === "application/pdf" ||
@@ -38,7 +37,7 @@ const upload = multer({
   },
 });
 
-// ✅ multiple fields upload
+// ✅ PROPERTY (unchanged)
 const uploadFields = upload.fields([
   { name: "images", maxCount: 5 },
   { name: "documents", maxCount: 5 },
@@ -46,10 +45,17 @@ const uploadFields = upload.fields([
   { name: "brochure", maxCount: 1 },
 ]);
 
-// ✅ single file (optional use)
+// ✅ PROPERTY single (existing)
 const uploadSingle = upload.single("document");
+
+// ✅ 🔥 NEW FOR BROKER
+const uploadBrokerDoc = (req, res, next) => {
+  req.uploadFolder = "brokers"; // 🔥 separate folder
+  return upload.single("file")(req, res, next);
+};
 
 module.exports = {
   uploadFields,
   uploadSingle,
+  uploadBrokerDoc, // 🔥 export this
 };

@@ -27,10 +27,10 @@ const investmentSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ["pending", "completed", "rejected"],
+    enum: ["pending", "payment_done", "approved", "rejected"],
     default: "pending",
   },
-
+  
   method: {
     type: String,
     default: "Bank Transfer",

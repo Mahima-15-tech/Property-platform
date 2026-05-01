@@ -5,7 +5,7 @@
     email: {
       type: String,
       unique: true,
-      sparse: true, // 👈 important (OTP users ke liye)
+      sparse: true,
     },
   
     password: {
@@ -25,6 +25,10 @@
       default: "investor",
     },
   
+    // 🔥 ADD THESE
+    pan: String,
+    rera: String,
+  
     isVerified: { type: Boolean, default: false },
   
     otp: String,
@@ -43,15 +47,23 @@
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+  
     isApproved: {
       type: Boolean,
-      default: false
-    },
-    commissionRate: {
-      type: Number,
-      default: 10
+      default: false,
     },
   
+    commissionRate: {
+      type: Number,
+      default: 10,
+    },
+  
+    watchlist: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Property",
+      },
+    ],
   }, { timestamps: true });
 
   module.exports = mongoose.model("User", userSchema);

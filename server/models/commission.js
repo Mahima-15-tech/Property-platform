@@ -15,16 +15,20 @@ const commissionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Property",
   },
+
+  status: {
+    type: String,
+    enum: ["pending", "paid"],
+    default: "pending",
+  },
+
+  
   type: {
     type: String,
     enum: ["sale", "referral", "performance"],
   },
 
-  status: {
-    type: String,
-    enum: ["pending", "paid"],
-    default: "pending"
-  },
+  
   amount: Number,
   commissionAmount: Number,
 

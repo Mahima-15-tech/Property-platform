@@ -2,60 +2,44 @@ const User = require("../models/user");
 const bcrypt = require("bcrypt");
 
 exports.sendOtp = async (req, res) => {
-  const { phone, name, referralCode, agree } = req.body;
+  const { phone, role } = req.body;
 
-  let user = await User.findOne({ phone }); // ✅ pehle ye aayega
+  const user = await User.findOne({ phone });
 
-  // ✅ sirf signup ke time agree check
-  if (!user && !agree) {
+  if (!user) {
     return res.status(400).json({
-      message: "Please accept Terms & Conditions",
+      message: "User not found. Please signup first",
+    });
+  }
+
+  if (user.role !== role) {
+    return res.status(400).json({
+      message: `This number is registered as ${user.role}. Please login from correct panel.`,
     });
   }
 
   const otp = "123456";
 
-  let referredBy = null;
+  user.otp = otp;
+  user.otpExpiry = Date.now() + 5 * 60 * 1000;
 
-  if (referralCode) {
-    const broker = await User.findOne({ referralCode });
-    if (broker) referredBy = broker._id;
-  }
+  await user.save();
 
-  if (!user) {
-    user = await User.create({
-      name,
-      phone,
-      otp,
-      referredBy,
-      otpExpiry: Date.now() + 5 * 60 * 1000,
-    });
-  } else {
-    user.otp = otp;
-    user.otpExpiry = Date.now() + 5 * 60 * 1000;
-  
-    // 🔥 ADD THIS
-    if (!user.referredBy && referralCode) {
-      const broker = await User.findOne({ referralCode });
-      if (broker) user.referredBy = broker._id;
-    }
-  
-    await user.save();
-  }
-
-  res.json({
-    message: "OTP sent",
-    ...(process.env.NODE_ENV !== "production" && { otp }),
-  });
+  res.json({ message: "OTP sent", otp });
 };
 
 exports.verifyOtp = async (req, res) => {
-  const { phone, otp } = req.body;
+  const { phone, otp, role } = req.body;
 
   const user = await User.findOne({ phone });
 
   if (!user) {
     return res.status(400).json({ message: "User not found" });
+  }
+  if (user.role !== role) {
+    return res.status(400).json({
+      message: `Invalid login type`,
+    });
   }
 
   if (!user.otp) {
@@ -94,6 +78,7 @@ exports.verifyOtp = async (req, res) => {
     user,
     type: isNewUser ? "signup" : "login",
     isNewUser: isNewUser,
+    role: user.role,
   });
 };
 

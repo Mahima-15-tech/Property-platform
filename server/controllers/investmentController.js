@@ -2,6 +2,7 @@ const Investment = require("../models/investment");
 const Property = require("../models/property");
 const User = require("../models/user");
 const Commission = require("../models/commission");
+const Payment = require("../models/payment");
 exports.invest = async (req, res) => {
   try {
 
@@ -25,11 +26,7 @@ exports.invest = async (req, res) => {
       });
     }
 
-    if (user.kycStatus !== "approved") {
-      return res.status(403).json({
-        message: "Complete KYC first",
-      });
-    }
+   
 
     if (sharesNum > property.availableShares) {
       return res.status(400).json({
@@ -44,18 +41,18 @@ exports.invest = async (req, res) => {
       shares: sharesNum,
       amount,
       method: method || "Bank Transfer",
-  status: "pending", // 🔥 default
+  status: "pending", 
     });
 
-    property.availableShares -= sharesNum;
-    await property.save();
+    
 
     // commission
     if (user.referredBy) {
       const broker = await User.findById(user.referredBy);
-    
+      const finalAmount = amount; 
+
       const totalCommission =
-        (amount * broker.commissionRate) / 100;
+        (finalAmount * broker.commissionRate) / 100;
     
       // 🔥 split logic
       const sale = totalCommission * 0.7;
@@ -70,6 +67,7 @@ exports.invest = async (req, res) => {
           amount,
           commissionAmount: sale,
           type: "sale",
+          status: "pending", 
         },
         {
           brokerId: broker._id,
@@ -78,6 +76,7 @@ exports.invest = async (req, res) => {
           amount,
           commissionAmount: referral,
           type: "referral",
+          status: "pending", 
         },
         {
           brokerId: broker._id,
@@ -86,6 +85,7 @@ exports.invest = async (req, res) => {
           amount,
           commissionAmount: performance,
           type: "performance",
+          status: "pending", 
         },
       ]);
     }
@@ -108,13 +108,19 @@ exports.getCheckoutData = async (req, res) => {
     res.json({
       id: p._id,
       name: p.name,
-      location: p.location?.city,
+    
+      location: {
+        city: p.location?.city,
+        state: p.location?.state,
+      },
+    
       image: p.media?.images?.[0],
-
+    
+      // 🔥 IMPORTANT FIX
       sharePrice: p.pricePerShare,
-      totalShares: p.totalShares,
-      availableShares: p.availableShares,
-
+      totalShares: p.totalShares,        // ✅ ADD THIS (must)
+      sharesLeft: p.availableShares,     // frontend ke liye
+    
       roi: p.roi,
       fundedPercent: p.soldPercent,
     });
@@ -125,38 +131,68 @@ exports.getCheckoutData = async (req, res) => {
 };
 
 exports.createInvestment = async (req, res) => {
+  console.log("🔥 API HIT /createInvestment");
+console.log("👉 BODY:", req.body);
+console.log("👉 propertyId:", req.body.propertyId);
   try {
     const { propertyId, shares, referralCode } = req.body;
-
+   
     const property = await Property.findById(propertyId);
-
+    
     if (!property) {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    if (shares > property.availableShares) {
+    const sharesNum = Number(shares);
+    if (!sharesNum || isNaN(sharesNum)) {
+      return res.status(400).json({ message: "Invalid shares" });
+    }
+
+    if (sharesNum > property.availableShares) {
       return res.status(400).json({
         message: "Not enough shares available",
       });
     }
 
-    const amount = shares * property.pricePerShare;
+    const amount = sharesNum * property.pricePerShare;
 
     // 🔥 referral logic
     let discount = 0;
-    if (referralCode === "SOVEREIGN2024") {
-      discount = 500;
+    let broker = null;
+
+    if (referralCode) {
+      broker = await User.findOne({
+        referralCode,
+        role: "broker",
+        isApproved: true
+      });
+
+      if (!broker) {
+        return res.status(400).json({
+          message: "Invalid referral code",
+        });
+      }
+
+      // ✅ correct 5%
+      discount = amount * 0.05;
     }
 
     const finalAmount = amount - discount;
 
+    // 🔥 set referredBy only once
+    const user = await User.findById(req.user.id);
+    if (broker && !user.referredBy) {
+      user.referredBy = broker._id;
+      await user.save();
+    }
+
     const ownershipPercent =
-      (shares / property.totalShares) * 100;
+      (sharesNum / property.totalShares) * 100;
 
     const investment = await Investment.create({
       userId: req.user.id,
       propertyId,
-      shares,
+      shares: sharesNum,
       pricePerShare: property.pricePerShare,
       amount,
       discount,
@@ -164,25 +200,82 @@ exports.createInvestment = async (req, res) => {
       ownershipPercent,
     });
 
-    // 🔥 PROPERTY UPDATE
-    property.availableShares -= shares;
+    // 🔥 property update
+    property.availableShares -= sharesNum;
     property.investedAmount += finalAmount;
     property.investors += 1;
 
     property.soldPercent =
       ((property.totalShares - property.availableShares) /
-        property.totalShares) *
-      100;
+        property.totalShares) * 100;
 
     await property.save();
 
     res.json({
       message: "Investment successful",
       investment,
+      kycStatus: user.kycStatus || "pending"
     });
+
 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+
+exports.markPaymentDone = async (req, res) => {
+  const { investmentId } = req.body;
+
+  const inv = await Investment.findById(investmentId);
+
+  if (!inv) {
+    return res.status(404).json({ message: "Investment not found" });
+  }
+
+  // ✅ status update
+  inv.status = "payment_done";
+  await inv.save();
+
+  // ✅ 🔥 CREATE PAYMENT ENTRY (MOST IMPORTANT)
+  await Payment.create({
+    userId: inv.userId,
+    propertyId: inv.propertyId,
+    amount: inv.amount,
+    status: "success",
+    method: inv.method || "Bank Transfer",
+  });
+
+  res.json({
+    message: "Payment done, waiting admin approval",
+  });
+};
+
+exports.validateReferralCode = async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    const broker = await User.findOne({
+      referralCode: code,
+      role: "broker",
+      isApproved: true
+    });
+
+    if (!broker) {
+      return res.status(400).json({
+        valid: false,
+        message: "Invalid referral code"
+      });
+    }
+
+    res.json({
+      valid: true,
+      message: "Valid referral code",
+      discount: 5, // %
+      brokerId: broker._id
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

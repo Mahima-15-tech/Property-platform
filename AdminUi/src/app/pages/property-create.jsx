@@ -29,6 +29,7 @@ const steps = [
 
 export function PropertyCreate() {
   const [currentStep, setCurrentStep] = useState(1);
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -57,6 +58,11 @@ export function PropertyCreate() {
   
     uploading: false,
     progress: 0,
+
+    highlights: [],
+nearby: [],
+tenants: "",
+propertyGrade: "",
   });
   const navigate = useNavigate();
 
@@ -131,14 +137,64 @@ export function PropertyCreate() {
     const valid = validateStep();
     if (!valid) return;
   
+    setLoading(true);
+  
+  
     try {
       const token = localStorage.getItem("token");
   
-      const payload = { ...formData };
-  
-      await createProperty(payload, token);
-  
-      toast.success("Property Created 🚀");
+      const form = new FormData();
+
+
+
+// BASIC
+form.append("name", formData.name);
+form.append("type", formData.type);
+form.append("size", formData.size);
+form.append("description", formData.description);
+
+// LOCATION
+form.append("city", formData.city);
+form.append("state", formData.state);
+form.append("address", formData.address);
+
+form.append("amenities", JSON.stringify(formData.amenities));
+
+// INVESTMENT
+form.append("totalValue", formData.totalValue);
+form.append("totalShares", formData.totalShares);
+form.append("expectedROI", formData.expectedROI);
+form.append("duration", formData.duration);
+
+form.append("tenants", formData.tenants);
+form.append("propertyGrade", formData.propertyGrade);
+
+form.append("highlights", JSON.stringify(formData.highlights));
+// form.append("nearby", JSON.stringify(formData.nearby));
+
+form.append("pricePerShare", formData.pricePerShare);
+
+
+// ✅ ONLY IMAGES SEND
+formData.images.forEach((img) => {
+  form.append("images", img);
+});
+if (formData.video) {
+  form.append("video", formData.video);
+}
+
+if (formData.brochure) {
+  form.append("brochure", formData.brochure);
+}
+
+formData.documents.forEach(doc => {
+  form.append("documents", doc);
+});
+
+const response = await createProperty(form);
+
+console.log("✅ RESPONSE:", response); 
+toast.success("Property Created 🚀");
       navigate("/properties");
     } catch (err) {
       console.log(err);
@@ -282,6 +338,38 @@ export function PropertyCreate() {
                   updateFormData("description", e.target.value)
                 }
               />
+
+<Label>Tenants</Label>
+<Input
+  placeholder="e.g. 3 Tenants"
+  value={formData.tenants || ""}
+  onChange={(e) => updateFormData("tenants", e.target.value)}
+/>
+
+<Label>Property Grade</Label>
+<Input
+  placeholder="e.g. Grade-A Building"
+  onChange={(e) => updateFormData("propertyGrade", e.target.value)}
+/>
+
+<Label>Highlights</Label>
+<Input
+  placeholder="e.g. Fully Furnished, Prime Location"
+  value={formData.highlights.join(", ") || ""}
+  onChange={(e) =>
+    updateFormData(
+      "highlights",
+      e.target.value.split(",").map(i => i.trim())
+    )
+  }
+/>
+{/* 
+<Label>Nearby</Label>
+<Input
+  placeholder="e.g. Metro-2min, Airport-20min"
+  value={formData.nearby || ""}
+  onChange={(e) => updateFormData("nearby", e.target.value)}
+/> */}
             </>
           )}
 
@@ -440,18 +528,42 @@ export function PropertyCreate() {
           {currentStep === 5 && (
   <div className="space-y-4">
     <div className="grid grid-cols-2 gap-4">
-      <Input placeholder="State" onChange={(e) => updateFormData("state", e.target.value)} />
-      <Input placeholder="City" onChange={(e) => updateFormData("city", e.target.value)} />
+    <Input
+  placeholder="State"
+  value={formData.state || ""}
+  onChange={(e) => updateFormData("state", e.target.value)}
+/>
+<Input
+  placeholder="City"
+  value={formData.city || ""}
+  onChange={(e) => updateFormData("city", e.target.value)}
+/>
     </div>
 
-    <Input placeholder="Address" onChange={(e) => updateFormData("address", e.target.value)} />
+    <Input
+  placeholder="Address"
+  value={formData.address || ""}
+  onChange={(e) => updateFormData("address", e.target.value)}
+/>
 
     <div className="grid grid-cols-2 gap-4">
-      <Input placeholder="Street" onChange={(e) => updateFormData("street", e.target.value)} />
-      <Input placeholder="Pincode" onChange={(e) => updateFormData("pincode", e.target.value)} />
+    <Input
+  placeholder="Street"
+  value={formData.street || ""}
+  onChange={(e) => updateFormData("street", e.target.value)}
+/>
+<Input
+  placeholder="Pincode"
+  value={formData.pincode || ""}
+  onChange={(e) => updateFormData("pincode", e.target.value)}
+/>
     </div>
 
-    <Input placeholder="Landmark" onChange={(e) => updateFormData("landmark", e.target.value)} />
+    <Input
+  placeholder="Landmark"
+  value={formData.landmark || ""}
+  onChange={(e) => updateFormData("landmark", e.target.value)}
+/>
 
     <div className="space-y-3">
 
@@ -504,14 +616,16 @@ export function PropertyCreate() {
     </div>
 
     <div className="grid grid-cols-2 gap-4">
-      <Input
-        placeholder="ROI"
-        onChange={(e) => updateFormData("expectedROI", e.target.value)}
-      />
-      <Input
-        placeholder="Duration"
-        onChange={(e) => updateFormData("duration", e.target.value)}
-      />
+    <Input
+  placeholder="ROI"
+  value={formData.expectedROI || ""}
+  onChange={(e) => updateFormData("expectedROI", e.target.value)}
+/>
+<Input
+  placeholder="Duration"
+  value={formData.duration || ""}
+  onChange={(e) => updateFormData("duration", e.target.value)}
+/>
     </div>
   </>
 )}

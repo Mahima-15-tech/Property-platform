@@ -24,8 +24,24 @@ const propertySchema = new mongoose.Schema(
     // 💰 INVESTMENT
     totalValue: Number,
     totalShares: Number,
+    soldShares: {
+      type: Number,
+      default: 0,
+    },
+    
+    soldPercent: {
+      type: Number,
+      default: 0,
+    },
+    
+    status: {
+      type: String,
+      enum: ["funding", "funded"],
+      default: "funding",
+    },
     availableShares: Number,
     pricePerShare: Number,
+    currentPricePerShare: Number,
 
     roi: Number,
     targetROI: Number,
@@ -96,12 +112,17 @@ const propertySchema = new mongoose.Schema(
       ],
     },
 
+    currentPricePerShare: Number,
+
+
     // 👤 OWNER
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
   },
+
+  
   { timestamps: true }
 );
 

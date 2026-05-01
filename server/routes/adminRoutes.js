@@ -5,12 +5,13 @@ const admin = require("../controllers/adminController");
 const protect = require("../middleware/authmiddleware");
 const authorize = require("../middleware/roleMiddleware");
 
+
 router.post("/login", admin.adminLogin);
 
 router.patch(
   "/approve-broker/:id",
-  protect,              // 🔐 login check
-  authorize("admin"),   // 👑 role check
+  protect,             
+  authorize("admin"),   
   admin.approveBroker
 );
 
@@ -26,6 +27,20 @@ router.patch(
   protect,
   authorize("admin"),
   admin.rejectKyc
+);
+
+router.put(
+  "/investments/:id/approve",
+  protect,
+  authorize("admin"),
+  admin.approveInvestment
+);
+
+router.put(
+  "/investments/:id/reject",
+  protect,
+  authorize("admin"),
+  admin.rejectInvestment
 );
 
 

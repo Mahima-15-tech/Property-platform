@@ -1,44 +1,71 @@
-const express = require("express");
-const dotenv = require("dotenv");
-const connectDB = require("./config/db");
-const cors = require("cors");
+// 🔥 dotenv sabse pehle
+require("dotenv").config();
 
-dotenv.config();
+const express = require("express");
+const cors = require("cors");
+const connectDB = require("./config/db");
+
+// routes
+const authRoutes = require("./routes/authRoutes");
+const brokerRoutes = require("./routes/brokerRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const userRoutes = require("./routes/userRoutes");
+const propertyRoutes = require("./routes/propertyRoutes");
+const investmentRoutes = require("./routes/investmentRoutes");
+const leadRoutes = require("./routes/leadRoutes");
+const portfolioRoutes = require("./routes/portfolioRoutes");
+const commissionRoutes = require("./routes/commissionRoutes");
+const transactionRoutes = require("./routes/transactionRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const auditLogRoutes = require("./routes/auditLogRoutes");
+const kycRoutes = require("./routes/kycRoutes");
+const paymentRoutes = require("./routes/paymentroute");
+const contactRoutes = require("./routes/contactRoutes");
+
+// 🔥 DB connect
 connectDB();
 
 const app = express();
 
+// 🔥 middleware
 app.use(cors({
   origin: [
     "http://localhost:5173",
     "http://localhost:5174",
+    "http://localhost:5175",
     "https://property-platform-six.vercel.app",
     "https://property-invest-gamma.vercel.app"
   ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
 
 app.use(express.json());
 
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/brokers", require("./routes/brokerRoutes"));
-app.use("/api/admin", require("./routes/adminRoutes"));
-app.use("/api/user", require("./routes/userRoutes"));
-app.use("/api/properties", require("./routes/propertyRoutes"));
-app.use("/api/investments", require("./routes/investmentRoutes"));
-app.use("/api/leads", require("./routes/leadRoutes"));
-app.use("/api/portfolio", require("./routes/portfolioRoutes"));
-app.use("/api/commissions", require("./routes/commissionRoutes"));
-app.use("/api", require("./routes/transactionRoutes"));
-app.use("/api/reports", require("./routes/reportRoutes"));
-app.use("/api", require("./routes/auditLogRoutes"));
+// 🔥 routes
+app.use("/api/auth", authRoutes);
+app.use("/api/brokers", brokerRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/properties", propertyRoutes);
+app.use("/api/investments", investmentRoutes);
+app.use("/api/leads", leadRoutes);
+app.use("/api/portfolio", portfolioRoutes);
+app.use("/api/commissions", commissionRoutes);
+app.use("/api", transactionRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api", auditLogRoutes);
+app.use("/api/kyc", kycRoutes);
+app.use("/api/payment", paymentRoutes);
+app.use("/api/contact", contactRoutes);
 
+// test route
 app.get("/test", (req, res) => {
   res.send("Working");
 });
 
-app.listen(process.env.PORT || 5000, () => {
-  console.log(`Server running on port ${process.env.PORT}`);
+// 🔥 start server
+const PORT = process.env.PORT || 8000;
+
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });

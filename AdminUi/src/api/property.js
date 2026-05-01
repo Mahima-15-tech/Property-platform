@@ -1,10 +1,10 @@
 import axios from "./axios";
 
 // CREATE
-export const createProperty = (data) => {
-  return axios.post("/properties", data);
+export const createProperty = async (data) => {
+  const res = await axios.post("/properties/create", data);
+  return res.data;
 };
-
 
 // GET ALL
 export const getProperties = () => {
@@ -15,6 +15,7 @@ export const getProperties = () => {
 export const getPropertyById = (id) => {
   return axios.get(`/properties/${id}`);
 };
+
 
 // UPDATE
 export const updateProperty = (id, data) => {
