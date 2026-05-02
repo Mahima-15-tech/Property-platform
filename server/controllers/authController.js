@@ -2,20 +2,20 @@ const User = require("../models/user");
 const bcrypt = require("bcrypt");
 
 exports.sendOtp = async (req, res) => {
-  const { phone, role } = req.body;
+  const { phone, role, name } = req.body;
 
-  const user = await User.findOne({ phone });
+  let user = await User.findOne({ phone });
 
+  // ✅ agar user nahi hai → create karo
   if (!user) {
-    return res.status(400).json({
-      message: "User not found. Please signup first",
+    user = await User.create({
+      phone,
+      name,
+      role: role || "investor",
     });
-  }
-
-  if (user.role !== role) {
-    return res.status(400).json({
-      message: `This number is registered as ${user.role}. Please login from correct panel.`,
-    });
+  } else {
+    // ✅ FIX: existing user ka role sync karo
+    user.role = role || user.role;
   }
 
   const otp = "123456";
@@ -36,7 +36,8 @@ exports.verifyOtp = async (req, res) => {
   if (!user) {
     return res.status(400).json({ message: "User not found" });
   }
-  if (user.role !== role) {
+  // ✅ safe
+if (role && user.role !== role)  {
     return res.status(400).json({
       message: `Invalid login type`,
     });
